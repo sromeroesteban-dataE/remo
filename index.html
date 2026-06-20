@@ -220,7 +220,7 @@
 <section class="form-section" id="registro">
   <div class="form-wrap reveal">
     <div id="formContent">
-      <form action="https://formsubmit.co/sromeroesteban@gmail.com" method="POST">
+      <form id="remoForm" onsubmit="handleSubmit(event)">
       <!-- FormSubmit config -->
       <input type="hidden" name="_subject" value="🐝 Nuevo registro REmo waiting list">
       <input type="hidden" name="_captcha" value="false">
@@ -246,7 +246,7 @@
 
       <div style="margin-bottom:20px">
         <label class="field-lbl" for="email">Tu email</label>
-        <input class="field-input" type="email" id="email" placeholder="vos@email.com" autocomplete="email" inputmode="email">
+        <input class="field-input" type="email" id="email" name="email" placeholder="vos@email.com" autocomplete="email" inputmode="email">
         <div class="field-err" id="emailErr">Ingresá un email válido.</div>
       </div>
 
@@ -258,7 +258,7 @@
     <div class="success-state" id="successState">
       <div class="success-check">✓</div>
       <div class="success-title">¡Estás en la lista <span class="re">RE</span>al!</div>
-      <p class="success-body">Te avisamos cuando REmo esté listo. Vas a ser de los primeros en saber — y en pedir el primer viaje.</p>
+      <p class="success-body">Pronto estarás en la aventura REmo. Te avisamos cuando estemos listos en tu ciudad — vas a ser de los primeros en subir.</p>
       <div class="success-num"><span class="pulse-dot"></span>Lugar <span id="spotNum" style="color:var(--white);font-weight:900;margin:0 4px">—</span> en lista de espera</div>
     </div>
   </div>
@@ -316,17 +316,50 @@
   },{threshold:.3});
   so.observe(document.querySelector(".stats-bar"));
 
-  // Client-side email validation before form submits
-  document.querySelector("form").addEventListener("submit", function(e){
-    const el = document.getElementById("email");
-    const v  = el.value.trim();
+  // Submit via AJAX to FormSubmit so we can show inline success
+  async function handleSubmit(e){
+    e.preventDefault();
+    const emailEl = document.getElementById("email");
+    const v = emailEl.value.trim();
     const errEl = document.getElementById("emailErr");
-    el.classList.remove("err"); errEl.style.display="none";
+    emailEl.classList.remove("err"); errEl.style.display="none";
+
     if(!v || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
-      e.preventDefault();
-      el.classList.add("err"); errEl.style.display="block"; el.focus();
+      emailEl.classList.add("err"); errEl.style.display="block"; emailEl.focus(); return;
     }
-  });
+
+    const btn = document.querySelector(".btn-sub");
+    btn.disabled = true; btn.textContent = "Guardando tu lugar...";
+
+    const tipo = document.querySelector("input[name=tipo]:checked").value;
+
+    const formData = new FormData();
+    formData.append("email", v);
+    formData.append("tipo", tipo);
+    formData.append("_subject", "🐝 Nuevo registro REmo - " + tipo);
+    formData.append("_captcha", "false");
+    formData.append("_template", "table");
+
+    try {
+      await fetch("https://formsubmit.co/ajax/sromeroesteban@gmail.com", {
+        method: "POST",
+        headers: { "Accept": "application/json" },
+        body: formData
+      });
+    } catch(err) {
+      console.warn("FormSubmit error:", err);
+    }
+
+    // Update counter
+    liveCount++;
+    document.getElementById("cSignups").textContent = liveCount.toLocaleString("es-AR");
+    setProgress(liveCount);
+    document.getElementById("spotNum").textContent = "#" + liveCount.toLocaleString("es-AR");
+
+    // Show success state
+    document.getElementById("formContent").style.display = "none";
+    document.getElementById("successState").style.display = "block";
+  }
 </script>
 </body>
 </html>
